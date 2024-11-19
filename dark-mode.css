@@ -1,0 +1,32 @@
+body {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+
+input[type="text"] {
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #444;
+}
+
+input[type="checkbox"] {
+    accent-color: #ffffff;
+}
+
+.leaflet-popup-content-wrapper {
+    background: #333;
+    color: #fff;
+}
+
+.leaflet-popup-tip {
+    width: 0px;
+    height: 0px;
+}
+
+.leaflet-tooltip {
+    background-color: transparent;
+    box-shadow: none;
+    color: #fff;
+    border: none;
+}
