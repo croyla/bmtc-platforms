@@ -114,29 +114,29 @@
         navigator.permissions.query({ name: 'geolocation' }).then(function (result) {
             if (result.state === 'granted' || result.state === 'prompt') {
                 if (navigator.geolocation) {
-                    function updateUserLocation() {
                         navigator.geolocation.getCurrentPosition(function (position) {
-                            const userLat = position.coords.latitude;
-                            const userLng = position.coords.longitude;
-                            // Remove the existing user marker if it exists
-                            if (userMarker) {
-                                map.removeLayer(userMarker);
-                            }
-                           userMarker = L.circle([userLat, userLng], {
-                                radius: 1,
-                                color: 'red',
-                                fillColor: '#f03',
-                                fillOpacity: 0.5
-                            }).addTo(map);
-                            userMarker.bindPopup("You are here");
+                            function updateUserLocation() {
+                                const userLat = position.coords.latitude;
+                                const userLng = position.coords.longitude;
+                                // Remove the existing user marker if it exists
+                                if (userMarker) {
+                                    map.removeLayer(userMarker);
+                                }
+                               userMarker = L.circle([userLat, userLng], {
+                                    radius: 1,
+                                    color: 'red',
+                                    fillColor: '#f03',
+                                    fillOpacity: 0.5
+                                }).addTo(map);
+                                userMarker.bindPopup("You are here");
                             //map.setView([userLat, userLng], 15);
+                            }
+                            updateUserLocation();
+                            setInterval(updateUserLocation, 2000); // Update location every 5 seconds
                         }, function () {
                             console.log("Permission for location not granted");
                         });
-                    }
-                    updateUserLocation();
-                    setInterval(updateUserLocation, 2000); // Update location every 5 seconds
-                } else {
+                   } else {
                     alert('Geolocation is not supported by your browser');
                 }
             } else {
