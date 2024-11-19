@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KBS/Majestic Platform Helper</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="images/icon-192.png">
+</head>
+<body>
+    <input type="text" id="searchBar" placeholder="Search for a route or destination...">
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+            // Initialize the map
+        const map = L.map('map').setView([0, 0], 2);
+
+        // Add Mapbox tile layer
+        L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery &copy; <a href="https://www.mapbox.com/">Mapbox</a>',
+            id: 'mapbox/streets-v11',
+            tileSize: 512,
+            zoomOffset: -1,
+            maxZoom: 23,
+            accessToken: 'pk.eyJ1IjoiYWF5dXNocmFpIiwiYSI6ImNtMzZ6OGV5dDBjc2kybXM1aHB5OTRjZjEifQ.ElkXYhjw_67zmNSe6bP2fA'
+        }).addTo(map);
+
+        let geojsonLayer;
+        let geojsonData;
+        let userMarker;
+
+        // Load GeoJSON from URL
+        fetch('https://gist.githubusercontent.com/croyla/6f0e128de90c49d016e6b15ebbf6d3c0/raw/edf59253487ac691ba7f7cbdebfe0ed797a89830/platforms-routes-majestic.geojson')
+            .then(response => response.json())
+            .then(data => {
+                geojsonData = data;
+                geojsonLayer = L.geoJSON(geojsonData, {
+                    pointToLayer: function (feature, latlng) {
+                        if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
+                            return L.circle(latlng, {
+                                radius: 1,
+                                color: '#30a3ec',
+                                fillColor: '#fafafa',
+                                fillOpacity: 0.6
+                            });
+                        }
+                    },
+                    onEachFeature: function (feature, layer) {
+                        if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
+                            let popupContent = `<b>Platform:</b> ${feature.properties.Platform}<br><b>Routes:</b><ul style="max-height: 150px; overflow-y: auto;">`;
+                            feature.properties.Routes.forEach(route => {
+                                popupContent += `<li><b>${route.Name}</b> to ${route.Destination}</li>`;
+                            });
+                            popupContent += '</ul>';
+                            layer.bindPopup(popupContent);
+                        }
+                    }
+                }).addTo(map);
+                map.fitBounds(geojsonLayer.getBounds());
+            })
+            .catch(error => {
+                alert('Failed to load GeoJSON from URL');
+            });
+
+        // Search bar functionality
+        document.getElementById('searchBar').addEventListener('input', function (e) {
+            const searchTerm = e.target.value.toLowerCase();
+            if (geojsonLayer) {
+                geojsonLayer.clearLayers();
+            }
+            geojsonLayer = L.geoJSON(geojsonData, {
+                pointToLayer: function (feature, latlng) {
+                    if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
+                        return L.circle(latlng, {
+                            radius: 1,
+                            color: '#30a3ec',
+                            fillColor: '#fafafa',
+                            fillOpacity: 0.6
+                        });
+                    }
+                },
+                filter: function (feature) {
+                    if (feature.properties && feature.properties.Routes && feature.properties.Routes.length > 0) {
+                        return feature.properties.Routes.some(route => 
+                            route.Name.toLowerCase().includes(searchTerm) || 
+                            route.Destination.toLowerCase().includes(searchTerm)
+                        );
+                    }
+                    return false;
+                },
+                onEachFeature: function (feature, layer) {
+                    if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
+                        let filteredRoutes = feature.properties.Routes.filter(route => 
+                            route.Name.toLowerCase().includes(searchTerm) || 
+                            route.Destination.toLowerCase().includes(searchTerm)
+                        );
+                        if (filteredRoutes.length > 0) {
+                            let popupContent = `<b>Platform:</b> ${feature.properties.Platform}<br><b>Routes:</b><ul style="max-height: 150px; overflow-y: auto;">`;
+                            filteredRoutes.forEach(route => {
+                                popupContent += `<li><b>${route.Name}</b> to ${route.Destination}</li>`;
+                            });
+                            popupContent += '</ul>';
+                            layer.bindPopup(popupContent);
+                        }
+                    }
+                }
+            }).addTo(map);
+        });
+
+        // Get user location and display it on the map
+        navigator.permissions.query({ name: 'geolocation' }).then(function (result) {
+            if (result.state === 'granted' || result.state === 'prompt') {
+                if (navigator.geolocation) {
+                    function updateUserLocation() {
+                        navigator.geolocation.getCurrentPosition(function (position) {
+                            const userLat = position.coords.latitude;
+                            const userLng = position.coords.longitude;
+                            // Remove the existing user marker if it exists
+                            if (userMarker) {
+                                map.removeLayer(userMarker);
+                            }
+                           userMarker = L.circle([userLat, userLng], {
+                                radius: 1,
+                                color: 'red',
+                                fillColor: '#f03',
+                                fillOpacity: 0.5
+                            }).addTo(map);
+                            userMarker.bindPopup("You are here");
+                            //map.setView([userLat, userLng], 15);
+                        }, function () {
+                            console.log("Permission for location not granted");
+                        });
+                    }
+                    updateUserLocation();
+                    setInterval(updateUserLocation, 2000); // Update location every 5 seconds
+                } else {
+                    alert('Geolocation is not supported by your browser');
+                }
+            } else {
+                console.log('No geolocation permission provided.');
+            }
+        });
+    </script>
+</body>
+</html>
