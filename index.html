@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="images/icon-192.png">
     <style>
-    .hide-scroll::-webkit-scrollbar {
+    .hide-scroll::-webkit-scrollbar { /* Chrome, Chromium, & Safari */
         display: none;
     }
     .hide-scroll {
@@ -73,38 +73,45 @@
             .then(response => response.json())
             .then(data => {
                 geojsonData = data;
-                geojsonLayer = L.geoJSON(geojsonData, {
-                    pointToLayer: function (feature, latlng) {
-                        if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
-                            return L.circle(latlng, {
-                                radius: 1,
-                                color: '#30a3ec',
-                                fillColor: '#fafafa',
-                                fillOpacity: 0.6
-                            });
-                        }
-                    },
-                    onEachFeature: function (feature, layer) {
-                        if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
-                            let popupContent = `<b>Platform:</b> ${feature.properties.Platform}<br><b>Routes:</b><ul class="hide-scroll" style="max-height: 150px; overflow-y: auto; white-space: nowrap; overflow-x: auto;">`;
-                            feature.properties.Routes.forEach(route => {
-                                popupContent += `<li><b>${route.Name}</b> to ${route.Destination}</li>`;
-                            });
-                            popupContent += '</ul> <i>Warning: Data accuracy is not guaranteed</i>';
-                            layer.bindPopup(popupContent);
-                            layer.bindTooltip(`Platform ${feature.properties.Platform}`, {direction: 'bottom', permanent: true, offset: [0, 5]});
-                        }
-                    }
-                }).addTo(map);
-                map.fitBounds(geojsonLayer.getBounds());
+                loadDefault();
+                loadSearch(document.getElementById('searchBar'));
             })
             .catch(error => {
                 alert('Failed to load GeoJSON from URL');
             });
-
-        // Search bar functionality
-        document.getElementById('searchBar').addEventListener('input', function (e) {
-            const searchTerm = e.target.value.toLowerCase();
+        const loadDefault = () => {
+            geojsonLayer = L.geoJSON(geojsonData, {
+                pointToLayer: function (feature, latlng) {
+                    if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
+                        return L.circle(latlng, {
+                            radius: 1,
+                            color: '#30a3ec',
+                            fillColor: '#fafafa',
+                            fillOpacity: 0.6
+                        });
+                    }
+                },
+                onEachFeature: function (feature, layer) {
+                    if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
+                        let popupContent = `<b>Platform:</b> ${feature.properties.Platform}<br><b>Routes:</b><ul class="hide-scroll" style="max-height: 300px; overflow-y: auto; white-space: nowrap; overflow-x: auto;">`;
+                        feature.properties.Routes.forEach(route => {
+                            popupContent += `<li><b>${route.Name}</b> to ${route.Destination}</li>`;
+                        });
+                        popupContent += '</ul> <i>Warning: Data accuracy is not guaranteed</i>';
+                        layer.bindPopup(popupContent);
+                        layer.bindTooltip(`Platform ${feature.properties.Platform}`, {direction: 'bottom', permanent: true, offset: [0, 5]});
+                    }
+                }
+            }).addTo(map);
+            map.fitBounds(geojsonLayer.getBounds());
+        };
+        const loadSearch = (e) => {
+            
+            const searchTerm = e.target ? e.target.value.toLowerCase() : e.value.toLowerCase();
+            if (searchTerm.length === 0){
+                loadDefault();
+                return;
+            }
             if (geojsonLayer) {
                 geojsonLayer.clearLayers();
             }
@@ -124,7 +131,7 @@
                         return feature.properties.Routes.some(route => 
                             route.Name.toLowerCase().includes(searchTerm) || 
                             route.Destination.toLowerCase().includes(searchTerm) ||
-                            route.Stops.some(stop => stop.toLowerCase().includes(searchTerm) && stop.toLowerCase() !== route.Destination.toLowerCase() && stop.toLowerCase() !== 'kempegowda bus station')
+                            route.Stops.some(stop => stop.toLowerCase().includes(searchTerm) && (stop.toLowerCase() !== route.Destination.toLowerCase()) && (stop.toLowerCase() !== 'kempegowda bus station'))
                         );
                     }
                     return false;
@@ -134,14 +141,14 @@
                         let filteredRoutes = feature.properties.Routes.filter(route => 
                             route.Name.toLowerCase().includes(searchTerm) || 
                             route.Destination.toLowerCase().includes(searchTerm) ||
-                            route.Stops.some(stop => stop.toLowerCase().includes(searchTerm) && stop.toLowerCase() !== route.Destination.toLowerCase())
+                            route.Stops.some(stop => stop.toLowerCase().includes(searchTerm) && (stop.toLowerCase() !== route.Destination.toLowerCase()) && (stop.toLowerCase() !== 'kempegowda bus station'))
                         );
 
                         if (filteredRoutes.length > 0) {
-                            let popupContent = `<b>Platform:</b> ${feature.properties.Platform}<br><b>Routes:</b><ul class="hide-scroll" style="max-height: 150px; overflow-y: auto; white-space: nowrap; overflow-x: auto;">`;
+                            let popupContent = `<b>Platform:</b> ${feature.properties.Platform}<br><b>Routes:</b><ul class="hide-scroll" style="max-height: 300px; overflow-y: auto; white-space: nowrap; overflow-x: auto;">`;
 
                             filteredRoutes.forEach(route => {
-                                let stopMatches = route.Stops.filter(stop => stop.toLowerCase().includes(searchTerm) && stop.toLowerCase() !== route.Destination.toLowerCase());
+                                let stopMatches = route.Stops.filter(stop => stop.toLowerCase().includes(searchTerm) && (stop.toLowerCase() !== route.Destination.toLowerCase()) && (stop.toLowerCase() !== 'kempegowda bus station'));
                                 let stopMatchesContent = '';
 
                                 if (stopMatches.length > 0) {
@@ -158,7 +165,11 @@
                     }
                 }
             }).addTo(map);
-        });
+        };
+
+
+        // Search bar functionality
+        document.getElementById('searchBar').addEventListener('input', loadSearch);
 
         // Get user location and display it on the map
         navigator.permissions.query({ name: 'geolocation' }).then(function (result) {
@@ -182,7 +193,7 @@
                             //map.setView([userLat, userLng], 15);
                         }
                         updateUserLocation();
-                        setInterval(updateUserLocation, 2000); // Update location every 5 seconds
+                        setInterval(updateUserLocation, 2000); // Update location every 2 seconds
                     }, function () {
                         console.log("Permission for location not granted");
                     });
