@@ -11,7 +11,7 @@ input[type="text"] {
 }
 
 input[type="checkbox"] {
-    accent-color: #ffffff;
+    accent-color: #fff;
 }
 
 .leaflet-popup-content-wrapper {

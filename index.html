@@ -3,16 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="View buses and platforms for Kempegowda Bus Station / KBS / Majestic Bus Stand in an interactive map">
+    <meta name="keywords" content="Majestic bus stand, Kempegowda Bus Stand, Kempegowda Bus Station, Bus, Platform, Station, Routes">
     <title>KBS/Majestic Platform Helper</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="dark-mode.css" id="dark-mode-stylesheet" disabled>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="images/icon-192.png">
+    <style>
+    .hide-scroll::-webkit-scrollbar {
+        display: none;
+    }
+    .hide-scroll {
+        -ms-overflow-style: none; /* IE & Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+    </style>
 </head>
 <body>
+    <div style="font-family: arial">
     <input type="checkbox" id="darkModeToggle"> Dark Mode
     <input type="text" id="searchBar" placeholder="Search for a route or destination...">
+    </div>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -27,7 +40,7 @@
             tileSize: 512,
             zoomOffset: -1,
             maxZoom: 23,
-            accessToken: 'pk.eyJ1IjoiYWF5dXNocmFpIiwiYSI6ImNtMzZ6OGV5dDBjc2kybXM1aHB5OTRjZjEifQ.ElkXYhjw_67zmNSe6bP2fA'
+            accessToken: 'pk.eyJ1IjoiYWF5dXNocmFpIiwiYSI6ImNtM29vajMydjA0ZzUya3M4ZnF5Nndta3oifQ.1BitjioHDlHUF4Rdre-nmA'
         }).addTo(map);
         // Dark mode functionality
         const darkModeToggle = document.getElementById('darkModeToggle');
@@ -73,11 +86,11 @@
                     },
                     onEachFeature: function (feature, layer) {
                         if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
-                            let popupContent = `<b>Platform:</b> ${feature.properties.Platform}<br><b>Routes:</b><ul style="max-height: 150px; overflow-y: auto;">`;
+                            let popupContent = `<b>Platform:</b> ${feature.properties.Platform}<br><b>Routes:</b><ul class="hide-scroll" style="max-height: 150px; overflow-y: auto; white-space: nowrap; overflow-x: auto;">`;
                             feature.properties.Routes.forEach(route => {
                                 popupContent += `<li><b>${route.Name}</b> to ${route.Destination}</li>`;
                             });
-                            popupContent += '</ul>';
+                            popupContent += '</ul> <i>Warning: Data accuracy is not guaranteed</i>';
                             layer.bindPopup(popupContent);
                             layer.bindTooltip(`Platform ${feature.properties.Platform}`, {direction: 'bottom', permanent: true, offset: [0, 5]});
                         }
@@ -110,7 +123,8 @@
                     if (feature.properties && feature.properties.Routes && feature.properties.Routes.length > 0) {
                         return feature.properties.Routes.some(route => 
                             route.Name.toLowerCase().includes(searchTerm) || 
-                            route.Destination.toLowerCase().includes(searchTerm)
+                            route.Destination.toLowerCase().includes(searchTerm) ||
+                            route.Stops.some(stop => stop.toLowerCase().includes(searchTerm) && stop.toLowerCase() !== route.Destination.toLowerCase() && stop.toLowerCase() !== 'kempegowda bus station')
                         );
                     }
                     return false;
@@ -119,14 +133,25 @@
                     if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
                         let filteredRoutes = feature.properties.Routes.filter(route => 
                             route.Name.toLowerCase().includes(searchTerm) || 
-                            route.Destination.toLowerCase().includes(searchTerm)
+                            route.Destination.toLowerCase().includes(searchTerm) ||
+                            route.Stops.some(stop => stop.toLowerCase().includes(searchTerm) && stop.toLowerCase() !== route.Destination.toLowerCase())
                         );
+
                         if (filteredRoutes.length > 0) {
-                            let popupContent = `<b>Platform:</b> ${feature.properties.Platform}<br><b>Routes:</b><ul style="max-height: 150px; overflow-y: auto;">`;
+                            let popupContent = `<b>Platform:</b> ${feature.properties.Platform}<br><b>Routes:</b><ul class="hide-scroll" style="max-height: 150px; overflow-y: auto; white-space: nowrap; overflow-x: auto;">`;
+
                             filteredRoutes.forEach(route => {
-                                popupContent += `<li><b>${route.Name}</b> to ${route.Destination}</li>`;
+                                let stopMatches = route.Stops.filter(stop => stop.toLowerCase().includes(searchTerm) && stop.toLowerCase() !== route.Destination.toLowerCase());
+                                let stopMatchesContent = '';
+
+                                if (stopMatches.length > 0) {
+                                    stopMatchesContent = ` via ${stopMatches.join(', ')}`;
+                                }
+
+                                popupContent += `<li><b>${route.Name}</b> to ${route.Destination}${stopMatchesContent}</li>`;
                             });
-                            popupContent += '</ul>';
+
+                            popupContent += '</ul> <i>Warning: Data accuracy is not guaranteed</i>';
                             layer.bindPopup(popupContent);
                             layer.bindTooltip(`Platform ${feature.properties.Platform}`, {direction: 'bottom', permanent: true, offset: [0, 5]});
                         }
