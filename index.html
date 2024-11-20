@@ -80,6 +80,9 @@
                 alert('Failed to load GeoJSON from URL');
             });
         const loadDefault = () => {
+            if (geojsonLayer) {
+                geojsonLayer.clearLayers();
+            }
             geojsonLayer = L.geoJSON(geojsonData, {
                 pointToLayer: function (feature, latlng) {
                     if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
