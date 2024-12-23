@@ -1,15 +1,15 @@
 {
-  "name": "KBS/Majestic Platform Helper",
-  "short_name": "KBS Platforms",
+  "name": "Platform Helper",
+  "short_name": "Platforms",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#30a3ec",
   "icons": [
     {
-      "src": "images/icon-192.png",
+      "src": "images/icon-128.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "128x128"
     },
     {
       "src": "images/icon-512.png",
@@ -17,9 +17,9 @@
       "sizes": "512x512"
     },
         {
-      "src": "images/icon-1024.png",
+      "src": "images/icon-256.png",
       "type": "image/png",
-      "sizes": "1024x1024"
+      "sizes": "256x256"
     }
   ]
 }

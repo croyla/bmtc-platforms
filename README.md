@@ -1,8 +1,8 @@
-# KBS/Majestic Platform Helper
+# [Unofficial] BMTC Platform Helper
 
 View platforms, search through routes to find out about their departure platform, or search through stops to find platforms and buses
 
-The version that this repo has is hosted on [our domain](https://kbs.blrtransit.com) as well as [github-pages](https://crolya.github.io/kbs-platforms)
+The version that this repo has is hosted on [our domain](https://platforms.blrtransit.com) as well as [github-pages](https://croyla.github.io/bmtc-platforms)
 
 ### Usage
 
@@ -41,7 +41,7 @@ This can be solved by editing the code block:
 ```js
         // Add Mapbox tile layer
         const mapboxTileLayer = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/{z}/{x}/{y}?access_token={accessToken}', {
-            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery &copy; <a href="https://www.mapbox.com/">Mapbox</a>',
+            attribution: 'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
             tileSize: 512,
             zoomOffset: -1,
             maxZoom: 23,

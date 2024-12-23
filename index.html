@@ -1,213 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- VERSION 0.0.1 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="View buses and platforms for Kempegowda Bus Station / KBS / Majestic Bus Stand in an interactive map">
-    <meta name="keywords" content="Majestic bus stand, Kempegowda Bus Stand, Kempegowda Bus Station, Bus, Platform, Station, Routes">
-    <title>KBS/Majestic Platform Helper</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <meta name="description" content="View buses and platforms for BMTC platformed bus stations in an interactive map">
+    <meta name="keywords" content="Bus stand platforms, platforms">
+    <title>Platform Helper</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="dark-mode.css" id="dark-mode-stylesheet" disabled>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="images/icon-192.png">
     <style>
-    .hide-scroll::-webkit-scrollbar { /* Chrome, Chromium, & Safari */
-        display: none;
-    }
-    .hide-scroll {
-        -ms-overflow-style: none; /* IE & Edge */
-        scrollbar-width: none;  /* Firefox */
-    }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            padding: 20px;
+            text-align: center;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        li {
+            margin: 20px 0;
+        }
+        a {
+            display: inline-block;
+            width: 300px;
+            text-decoration: none;
+            color: #2c3e50;
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            transition: background 0.3s;
+            font-size: 1.2em;
+        }
+        a:hover {
+            background: #bdc3c7;
+        }
     </style>
+    <link rel="icon" type="image/png" href="./images/icon-128.png">
 </head>
 <body>
-    <div style="font-family: arial">
-    <input type="checkbox" id="darkModeToggle"> Dark Mode
-    <input type="text" id="searchBar" placeholder="Search for a route or destination...">
-    </div>
-    <div id="map"></div>
+<h1>Select a stop</h1>
+<ul id="link-list"></ul>
 
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script>
-
-        // Initialize the map
-        const map = L.map('map').setView([0, 0], 2);
-
-        // Add Mapbox tile layer
-        const mapboxTileLayer = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/{z}/{x}/{y}?access_token={accessToken}', {
-            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery &copy; <a href="https://www.mapbox.com/">Mapbox</a>',
-            tileSize: 512,
-            zoomOffset: -1,
-            maxZoom: 23,
-            accessToken: 'pk.eyJ1IjoiYWF5dXNocmFpIiwiYSI6ImNtM29vajMydjA0ZzUya3M4ZnF5Nndta3oifQ.1BitjioHDlHUF4Rdre-nmA'
-        }).addTo(map);
-        // Dark mode functionality
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        const darkModeStylesheet = document.getElementById('dark-mode-stylesheet');
-        // Load dark mode preference from local storage
-        if (localStorage.getItem('darkMode') == "true") {
-            darkModeStylesheet.disabled = false;
-            darkModeToggle.checked = true;
-            mapboxTileLayer.setUrl('https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token={accessToken}');
-        }
-
-        darkModeToggle.addEventListener('change', function () {
-            if (darkModeToggle.checked) {
-                darkModeStylesheet.disabled = false;
-                mapboxTileLayer.setUrl('https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token={accessToken}');
-                localStorage.setItem('darkMode', "true");
-            } else {
-                darkModeStylesheet.disabled = true;
-                mapboxTileLayer.setUrl('https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/{z}/{x}/{y}?access_token={accessToken}');
-                localStorage.setItem('darkMode', "false");
-            }
-        });
-        
-        let geojsonLayer;
-        let geojsonData;
-        let userMarker;
-
-        // Load GeoJSON from URL
-        fetch('https://gist.githubusercontent.com/croyla/6f0e128de90c49d016e6b15ebbf6d3c0/raw/platforms-routes-majestic.geojson')
-            .then(response => response.json())
-            .then(data => {
-                geojsonData = data;
-                loadDefault();
-                loadSearch(document.getElementById('searchBar'));
-            })
-            .catch(error => {
-                alert('Failed to load GeoJSON from URL');
+<script>
+    // Load the JSON data from assets/sources.json and create links
+    fetch('assets/sources.json')
+        .then(response => response.json())
+        .then(data => {
+            const linkList = document.getElementById('link-list');
+            Object.keys(data).forEach(key => {
+                const listItem = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = `stops/?stop=${key}`;
+                link.textContent = `${key}`;
+                listItem.appendChild(link);
+                linkList.appendChild(listItem);
             });
-        const loadDefault = () => {
-            if (geojsonLayer) {
-                geojsonLayer.clearLayers();
-            }
-            geojsonLayer = L.geoJSON(geojsonData, {
-                pointToLayer: function (feature, latlng) {
-                    if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
-                        return L.circle(latlng, {
-                            radius: 1,
-                            color: '#30a3ec',
-                            fillColor: '#fafafa',
-                            fillOpacity: 0.6
-                        });
-                    }
-                },
-                onEachFeature: function (feature, layer) {
-                    if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
-                        let popupContent = `<b>Platform:</b> ${feature.properties.Platform}<br><b>Routes:</b><ul class="hide-scroll" style="max-height: 300px; overflow-y: auto; white-space: nowrap; overflow-x: auto;">`;
-                        feature.properties.Routes.forEach(route => {
-                            popupContent += `<li><b>${route.Name}</b> to ${route.Destination}</li>`;
-                        });
-                        popupContent += '</ul> <i>Warning: Data accuracy is not guaranteed</i>';
-                        layer.bindPopup(popupContent);
-                        layer.bindTooltip(`Platform ${feature.properties.Platform}`, {direction: 'bottom', permanent: true, offset: [0, 5]});
-                    }
-                }
-            }).addTo(map);
-            map.fitBounds(geojsonLayer.getBounds());
-        };
-        const loadSearch = (e) => {
-            
-            const searchTerm = e.target ? e.target.value.toLowerCase() : e.value.toLowerCase();
-            if (searchTerm.length === 0){
-                loadDefault();
-                return;
-            }
-            if (geojsonLayer) {
-                geojsonLayer.clearLayers();
-            }
-            geojsonLayer = L.geoJSON(geojsonData, {
-                pointToLayer: function (feature, latlng) {
-                    if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
-                        return L.circle(latlng, {
-                            radius: 1,
-                            color: '#30a3ec',
-                            fillColor: '#fafafa',
-                            fillOpacity: 0.6
-                        });
-                    }
-                },
-                filter: function (feature) {
-                    if (feature.properties && feature.properties.Routes && feature.properties.Routes.length > 0) {
-                        return feature.properties.Routes.some(route => 
-                            route.Name.toLowerCase().includes(searchTerm) || 
-                            route.Destination.toLowerCase().includes(searchTerm) ||
-                            route.Stops.some(stop => stop.toLowerCase().includes(searchTerm) && (stop.toLowerCase() !== route.Destination.toLowerCase()) && (stop.toLowerCase() !== 'kempegowda bus station'))
-                        );
-                    }
-                    return false;
-                },
-                onEachFeature: function (feature, layer) {
-                    if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
-                        let filteredRoutes = feature.properties.Routes.filter(route => 
-                            route.Name.toLowerCase().includes(searchTerm) || 
-                            route.Destination.toLowerCase().includes(searchTerm) ||
-                            route.Stops.some(stop => stop.toLowerCase().includes(searchTerm) && (stop.toLowerCase() !== route.Destination.toLowerCase()) && (stop.toLowerCase() !== 'kempegowda bus station'))
-                        );
-
-                        if (filteredRoutes.length > 0) {
-                            let popupContent = `<b>Platform:</b> ${feature.properties.Platform}<br><b>Routes:</b><ul class="hide-scroll" style="max-height: 300px; overflow-y: auto; white-space: nowrap; overflow-x: auto;">`;
-
-                            filteredRoutes.forEach(route => {
-                                let stopMatches = route.Stops.filter(stop => stop.toLowerCase().includes(searchTerm) && (stop.toLowerCase() !== route.Destination.toLowerCase()) && (stop.toLowerCase() !== 'kempegowda bus station'));
-                                let stopMatchesContent = '';
-
-                                if (stopMatches.length > 0) {
-                                    stopMatchesContent = ` via ${stopMatches.join(', ')}`;
-                                }
-
-                                popupContent += `<li><b>${route.Name}</b> to ${route.Destination}${stopMatchesContent}</li>`;
-                            });
-
-                            popupContent += '</ul> <i>Warning: Data accuracy is not guaranteed</i>';
-                            layer.bindPopup(popupContent);
-                            layer.bindTooltip(`Platform ${feature.properties.Platform}`, {direction: 'bottom', permanent: true, offset: [0, 5]});
-                        }
-                    }
-                }
-            }).addTo(map);
-        };
-
-
-        // Search bar functionality
-        document.getElementById('searchBar').addEventListener('input', loadSearch);
-
-        // Get user location and display it on the map
-        navigator.permissions.query({ name: 'geolocation' }).then(function (result) {
-            if (result.state === 'granted' || result.state === 'prompt') {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(function (position) {
-                        function updateUserLocation() {
-                            const userLat = position.coords.latitude;
-                            const userLng = position.coords.longitude;
-                            // Remove the existing user marker if it exists
-                            if (userMarker) {
-                                map.removeLayer(userMarker);
-                            }
-                            userMarker = L.circle([userLat, userLng], {
-                                radius: 1,
-                                color: 'red',
-                                fillColor: '#f03',
-                                fillOpacity: 0.5
-                            }).addTo(map);
-                            userMarker.bindPopup("You are here");
-                            //map.setView([userLat, userLng], 15);
-                        }
-                        updateUserLocation();
-                        setInterval(updateUserLocation, 2000); // Update location every 2 seconds
-                    }, function () {
-                        console.log("Permission for location not granted");
-                    });
-                } else {
-                    alert('Geolocation is not supported by your browser');
-                }
-            } else {
-                console.log('No geolocation permission provided.');
-            }
-        });
-    </script>
+        })
+        .catch(error => console.error('Error loading JSON:', error));
+</script>
 </body>
 </html>

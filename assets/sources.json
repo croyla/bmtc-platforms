@@ -1,0 +1,10 @@
+{
+  "KBS/Majestic": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/main/out/platforms-routes-majestic.geojson",
+  "Banashankari": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/main/out/platforms-routes-banashankari.geojson",
+  "Shivajinagar": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/main/out/platforms-routes-shivajinagar.geojson",
+  "Kengeri": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/main/out/platforms-routes-kengeri.geojson",
+  "Shantinagar": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/main/out/platforms-routes-shantinagar.geojson",
+  "Vijayanagar": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/main/out/platforms-routes-vijayanagar.geojson",
+  "Domlur": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/main/out/platforms-routes-domlur.geojson",
+  "Jayanagar": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/main/out/platforms-routes-jayanagar.geojson"
+}
