@@ -1,6 +1,6 @@
 self.addEventListener('install', function(event) {
     event.waitUntil(
-        caches.open('geojson-viewer-cache').then(function(cache) {
+        caches.open('platform-helper-cache').then(function(cache) {
             return cache.addAll([
                 '/',
                 '/index.html',
