@@ -22,3 +22,17 @@ button {
     width: 0px;
     height: 0px;
 }
+.platform-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 2px solid #007BFF;
+    border-radius: 50%;
+    height: 75px;
+    width: 75px;
+    font-size: 8px;
+    font-weight: bold;
+    text-align: center;
+    color: #000;
+}
