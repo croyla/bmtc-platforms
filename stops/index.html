@@ -156,14 +156,22 @@
                 geojsonLayer.clearLayers();
             }
             geojsonLayer = L.geoJSON(geojsonData, {
-                pointToLayer: function (feature, latlng) {
-                    if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
-                        return L.circle(latlng, {
-                            radius: 1,
-                            color: '#30a3ec',
-                            fillColor: '#fafafa',
-                            fillOpacity: 0.6
+                pointToLayer:  function (feature, latlng) {
+                    if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {  // Exclude platforms without routes
+                        return L.marker(latlng, {
+                            draggable: false,
+                            icon: L.divIcon({
+                                className: 'platform-label',  // Custom CSS class for styling the point
+                                iconSize: null,
+                                html: `<div>${feature.properties.Platform}</div>`  // Display platform name on the point
+                            })
                         });
+                        // L.circle(latlng, {
+                        //     radius: 1,
+                        //     color: '#30a3ec',
+                        //     fillColor: '#fafafa',
+                        //     fillOpacity: 0.6
+                        // });
                     }
                 },
                 filter: function (feature) {
@@ -200,7 +208,7 @@
 
                             popupContent += '</ul> <i>Warning: Data accuracy is not guaranteed</i>';
                             layer.bindPopup(popupContent);
-                            layer.bindTooltip(`Platform ${feature.properties.Platform}`, {direction: 'bottom', permanent: true, offset: [0, 5]});
+                            // layer.bindTooltip(`Platform ${feature.properties.Platform}`, {direction: 'bottom', permanent: true, offset: [0, 5]});
                         }
                     }
                 }
