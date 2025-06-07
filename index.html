@@ -24,7 +24,7 @@
         li {
             margin: 20px 0;
         }
-        a {
+        .link {
             display: inline-block;
             width: 300px;
             text-decoration: none;
@@ -34,6 +34,26 @@
             border-radius: 8px;
             transition: background 0.3s;
             font-size: 1.2em;
+        }
+        footer {
+            padding: 15px;
+            background: #ecf0f1;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 0.9em;
+            color: #2c3e50;
+            max-width: 600px;
+            margin: 40px auto 0;
+            text-align: left;
+            line-height: 1.4;
+        }
+        footer a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        footer a:hover {
+            text-decoration: underline;
         }
         a:hover {
             background: #bdc3c7;
@@ -54,6 +74,7 @@
             Object.keys(data).forEach(key => {
                 const listItem = document.createElement('li');
                 const link = document.createElement('a');
+                link.className = 'link';
                 link.href = `stops/?stop=${key}`;
                 link.textContent = `${key}`;
                 listItem.appendChild(link);
@@ -62,5 +83,9 @@
         })
         .catch(error => console.error('Error loading JSON:', error));
 </script>
+<footer>
+    <p>Platforms Data: <a href="https://github.com/croyla/bmtc-platforms-geojson" target="_blank">bmtc-platforms-geojson</a></p>
+    <p>Source code: <a href="https://github.com/croyla/bmtc-platforms" target="_blank">bmtc-platforms</a></p>
+</footer>
 </body>
 </html>

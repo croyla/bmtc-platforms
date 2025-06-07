@@ -87,7 +87,14 @@
                 if (stopKey && sources[stopKey]) {
                     return fetch(sources[stopKey]);
                 } else {
-                    throw new Error('Invalid or missing stop parameter');
+                    if (!stopKey) throw new Error('No stop key provided');
+                    try {
+                        const url = new URL(stopKey);
+                        return fetch(url);
+                    }
+                    catch (ex) {
+                        throw new Error('Invalid stop parameter');
+                    }
                 }
             })
             .then(response => response.json())
@@ -106,24 +113,33 @@
             }
             geojsonLayer = L.geoJSON(geojsonData, {
                 pointToLayer: function (feature, latlng) {
-                    if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
-                        return L.circle(latlng, {
-                            radius: 1,
-                            color: '#30a3ec',
-                            fillColor: '#fafafa',
-                            fillOpacity: 0.6
+                    if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {  // Exclude platforms without routes
+                        return L.marker(latlng, {
+                            draggable: false,
+                            icon: L.divIcon({
+                                className: 'platform-label',  // Custom CSS class for styling the point
+                                iconSize: null,
+                                html: `<div>${feature.properties.Platform}</div>`  // Display platform name on the point
+                            })
                         });
+                        // L.circle(latlng, {
+                        //     radius: 1,
+                        //     color: '#30a3ec',
+                        //     fillColor: '#fafafa',
+                        //     fillOpacity: 0.6
+                        // });
                     }
                 },
-                onEachFeature: function (feature, layer) {
-                    if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {
+                onEachFeature: function (feature, layer) {  // Add popup
+                    if (feature.properties && feature.properties.Platform && feature.properties.Routes && feature.properties.Routes.length > 0) {  // Exclude platforms without routes
                         let popupContent = `<b>Platform:</b> ${feature.properties.Platform}<br><b>Routes:</b><ul class="hide-scroll" style="max-height: 300px; overflow-y: auto; white-space: nowrap; overflow-x: auto;">`;
                         feature.properties.Routes.forEach(route => {
                             popupContent += `<li><b>${route.Name}</b> to ${route.Destination}</li>`;
                         });
                         popupContent += '</ul> <i>Warning: Data accuracy is not guaranteed</i>';
                         layer.bindPopup(popupContent);
-                        layer.bindTooltip(`Platform ${feature.properties.Platform}`, {direction: 'bottom', permanent: true, offset: [0, 5]});
+                        // Add tooltip / label
+                        // layer.bindTooltip(`Platform ${feature.properties.Platform}`, {direction: 'bottom', permanent: true, offset: [0, 5]});
                     }
                 }
             }).addTo(map);
