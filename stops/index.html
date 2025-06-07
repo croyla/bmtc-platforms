@@ -87,7 +87,14 @@
                 if (stopKey && sources[stopKey]) {
                     return fetch(sources[stopKey]);
                 } else {
-                    throw new Error('Invalid or missing stop parameter');
+                    if (!stopKey) throw new Error('No stop key provided');
+                    try {
+                        const url = new URL(stopKey);
+                        return fetch(url);
+                    }
+                    catch (ex) {
+                        throw new Error('Invalid stop parameter');
+                    }
                 }
             })
             .then(response => response.json())
