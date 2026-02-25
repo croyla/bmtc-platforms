@@ -43,13 +43,11 @@
         // Initialize the map
         const map = L.map('map').setView([0, 0], 2);
 
-        // Add Mapbox tile layer
-        const mapboxTileLayer = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/{z}/{x}/{y}?access_token={accessToken}', {
-            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery &copy; <a href="https://www.mapbox.com/">Mapbox</a>',
-            tileSize: 512,
-            zoomOffset: -1,
-            maxZoom: 23,
-            accessToken: 'pk.eyJ1IjoiYWF5dXNocmFpIiwiYSI6ImNtM29vajMydjA0ZzUya3M4ZnF5Nndta3oifQ.1BitjioHDlHUF4Rdre-nmA'
+        // Add CartoCDN Positron tile layer
+        const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
         }).addTo(map);
 
         // Dark mode functionality
@@ -60,17 +58,17 @@
         if (localStorage.getItem('darkMode') == "true") {
             darkModeStylesheet.disabled = false;
             darkModeToggle.checked = true;
-            mapboxTileLayer.setUrl('https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token={accessToken}');
+            tileLayer.setUrl('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
         }
 
         darkModeToggle.addEventListener('change', function () {
             if (darkModeToggle.checked) {
                 darkModeStylesheet.disabled = false;
-                mapboxTileLayer.setUrl('https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token={accessToken}');
+                tileLayer.setUrl('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
                 localStorage.setItem('darkMode', "true");
             } else {
                 darkModeStylesheet.disabled = true;
-                mapboxTileLayer.setUrl('https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/{z}/{x}/{y}?access_token={accessToken}');
+                tileLayer.setUrl('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
                 localStorage.setItem('darkMode', "false");
             }
         });
