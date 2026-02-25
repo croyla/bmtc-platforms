@@ -1,66 +1,38 @@
-# [Unofficial] BMTC Platform Helper
+# sv
 
-View platforms, search through routes to find out about their departure platform, or search through stops to find platforms and buses
+Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
 
-The version that this repo has is hosted on [our domain](https://platforms.blrtransit.com) as well as [github-pages](https://croyla.github.io/bmtc-platforms)
+## Creating a project
 
-### Usage
+If you're seeing this, you've probably already done this step. Congrats!
 
-Upon loading the site the user is prompted with a location permission, denying the permission does nothing, however providing the permission displays the user's current location on the map, this location is updated.
+```bash
+# create a new project in the current directory
+npx sv create
 
-The checkbox in the top corner toggles the "Dark Mode" theme.
-
-The map has multiple displayed "features", one for each platform the app knows about.
-
-Each feature on the map has a title which is visible, this is usually the platform name. The feature is clickable to get relevant information. 
-
-The information provided is the following:
-
-> Shortname towards Destination
-> 
-> Ex: '**315-J** to Rampura'
-
-Optionally if a search query matches an intermediate stop:
-
-> Shortname towards Destination via Stop
-> 
-> Ex: '**315-J** to Rampura via Richmond Circle'
-
-The search box filters the features displayed on the map to features relevant to the search query. This also filters and modifies the information displayed in a feature.
-
-The entire service is designed to run smoother when installed on your phone. This can be done on iOS by opening the site in Safari, clicking on share, and adding it to the home screen. Similarly possible on Android with the default device browser, clicking on "Install" in the options area (next to the address bar).
-
-A few notes: The platforms may have inaccurate data. If you are aware of inaccuracies please raise an issue in this repo or [here](https://github.com/croyla/bmtc-platforms-geojson).
-
-### Self-Hosting
-
-Self-hosting can be achieved by simply cloning this repo and serving the folder, however the map will not load as the Mapbox Token used right now is restricted. 
-
-This can be solved by editing the code block:
-
-```js
-        // Add Mapbox tile layer
-        const mapboxTileLayer = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/{z}/{x}/{y}?access_token={accessToken}', {
-            attribution: 'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-            tileSize: 512,
-            zoomOffset: -1,
-            maxZoom: 23,
-            accessToken: 'REPLACE_WITH_YOUR_ACCESS_TOKEN'
-        }).addTo(map);
+# create a new project in my-app
+npx sv create my-app
 ```
 
-### How it works
+## Developing
 
-The applet queries geojson data from a [GitHub repo](https://github.com/croyla/bmtc-platforms-geojson), it then uses Leaflet and Mapbox to visualise the data in map form. 
+Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
 
-The geographic locations for the platforms are manually placed, and may be slightly inaccurate as a result. 
+```bash
+npm run dev
 
-The routes for platforms are sourced from [BMTC Amnex](https://bmtcwebportal.amnex.com/commuter/dashboard), as such reliability and accuracy tends to be dependent on the data received. There are manual overrides in place for routes known to be inaccurate in data received. If you are aware of any inaccuracies please raise an issue in this repo or the source GitHub repo.
+# or start the server and open the app in a new browser tab
+npm run dev -- --open
+```
 
-The route stops are sourced from a [static GTFS](https://github.com/Vonter/bmtc-gtfs), however not all routes in the geojson data have stops in the GTFS, as such some routes don't have searchable intermediate stops in the website. This can be fixed by updating the static GTFS.
+## Building
 
-### Special thanks
+To create a production version of your app:
 
-- [Namma BMTC](https://bmtcwebportal.amnex.com/commuter/dashboard)
-- [Vonter bmtc-gtfs](https://github.com/Vonter/bmtc-gtfs)
-- [Leaflet.js](https://leafletjs.com/)
+```bash
+npm run build
+```
+
+You can preview the production build with `npm run preview`.
+
+> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
