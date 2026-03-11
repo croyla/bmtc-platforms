@@ -1,38 +1,19 @@
-# sv
+# BMTC Platforms
+### Platform, bus route, stop web-app for bus stands in Bengaluru
+A mobile-friendly single-page PWA that facilitates easy navigation of bus stands in Bengaluru: 
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+#### Setup
 
-## Creating a project
+- To set up the project, for development or otherwise, first run `yarn install`
+- Once the packages have been installed, `yarn dev` will run the applet locally, while `yarn build` will create a build folder.
 
-If you're seeing this, you've probably already done this step. Congrats!
+#### Translations
 
-```bash
-# create a new project in the current directory
-npx sv create
+Translation strings for data elements are provided with the data, while other translations are stored in `messages/`. 
+Translation related settings (e.g default locale) are stored in `project.inlang/settings.json`.
 
-# create a new project in my-app
-npx sv create my-app
-```
+#### Data
 
-## Developing
+Data is sourced from the bmtc-platforms-geojson github repo and the official majestic repo, to facilitate this there is a `static/sources.json`
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+##### AI Disclaimer: Certain project components have been created or modified by generative AI.

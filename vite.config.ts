@@ -2,11 +2,20 @@ import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
-import {VitePWA} from "vite-plugin-pwa";
+import { VitePWA } from 'vite-plugin-pwa';
+import svelteSVG from '@poppanator/sveltekit-svg';
 
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
+		svelteSVG({
+			// Optional: svgo options or default true
+			// svgo: true,
+			// Default: "src/lib/icons"
+			// includePaths: ["src/assets/icons"],
+			// Default: ".svg"
+			// ext: "svg"
+		}),
 		sveltekit(),
 		paraglideVitePlugin({
 			project: './project.inlang',
@@ -27,9 +36,9 @@ export default defineConfig({
 				'pwa-512x512.png'
 			],
 			manifest: {
-				name: 'Platforms BLR',
-				short_name: 'Platforms',
-				description: 'BLR Bus Stations\' Platform App',
+				name: 'Banashankari',
+				short_name: 'Banashankari',
+				description: 'Banashankari Bus Station Platform App',
 				theme_color: '#ffffff',
 				background_color: '#ffffff',
 				display: 'standalone',
