@@ -6,6 +6,7 @@
   import { previousSelectedItem } from "$lib/stores/selectedItem";
   import LanguageSwitcher from "$lib/components/LanguageSwitcher.svelte";
   import { messages } from "$lib/stores/messages";
+  import {currentSource} from "$lib/stores/source";
 
   export let searchFocused: boolean;
   export let searchInput: HTMLInputElement | null = null;
@@ -37,8 +38,20 @@
   // Load stops coordinates on mount
   onMount(async () => {
     try {
-      const response = await fetch('/data/stops-coordinates.json');
-      stopsCoordinates = await response.json();
+      if ($currentSource !== null) {
+        const stops_sources = await fetch('/data/stops-coordinates-sources.json');
+        const stops_json = await stops_sources.json();
+        const response = await fetch(stops_json[$currentSource]);
+        stopsCoordinates = await response.json();
+      }
+      currentSource.subscribe(async (source) => {
+        if (source !== null) {
+          const stops_sources = await fetch('/data/stops-coordinates-sources.json');
+          const stops_json = await stops_sources.json();
+          const response = await fetch(stops_json[source]);
+          stopsCoordinates = await response.json();
+        }
+      });
     } catch (error) {
       console.error('Failed to load stops coordinates:', error);
     }

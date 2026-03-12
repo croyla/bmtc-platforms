@@ -10,6 +10,7 @@
   import {messages} from "$lib/stores/messages";
   import Fuse from 'fuse.js';
   import { searchMode } from '$lib/stores/searchMode';
+  import {currentSource} from "$lib/stores/source";
 
   export let searchFocused: boolean;
   export let searchInput: HTMLInputElement | null = null;
@@ -87,6 +88,7 @@
           }
         }
       );
+      if (!response.ok) throw new Error(`Nominatim ${response.status}`);
       const data = await response.json();
       nominatimResults = data || [];
     } catch (error) {
@@ -109,33 +111,41 @@
     return R * c * 1000; // Return in meters
   }
 
-  onMount(async () => {
-    // Load stops coordinates
+  async function loadStopsForSource(source: string) {
     try {
-      const response = await fetch('/data/stops-coordinates.json');
+      const stops_sources = await fetch('/data/stops-coordinates-sources.json');
+      const stops_json = await stops_sources.json();
+      const url = stops_json[source];
+      if (!url) return;
+      const response = await fetch(url);
       stopsCoordinates = await response.json();
-      // Build name-based lookup
-      for (const [stopId, stopData] of Object.entries(stopsCoordinates)) {
+
+      // Rebuild name-based lookup
+      stopsCoordinatesByName = new Map();
+      for (const [, stopData] of Object.entries(stopsCoordinates)) {
         stopsCoordinatesByName.set(stopData.name, { lat: stopData.lat, lon: stopData.lon });
       }
 
-      // Calculate viewbox from stops (5km buffer)
+      // Recalculate viewbox from stops (5km buffer)
       const coords = Object.values(stopsCoordinates).map(s => ({ lat: s.lat, lon: s.lon }));
       if (coords.length > 0) {
         const lats = coords.map(c => c.lat);
         const lons = coords.map(c => c.lon);
-        const minLat = Math.min(...lats);
-        const maxLat = Math.max(...lats);
-        const minLon = Math.min(...lons);
-        const maxLon = Math.max(...lons);
-
-        // Add ~5km buffer (roughly 0.045 degrees at this latitude)
         const buffer = 0.045;
-        viewbox = `${minLon - buffer},${minLat - buffer},${maxLon + buffer},${maxLat + buffer}`;
+        viewbox = `${Math.min(...lons) - buffer},${Math.min(...lats) - buffer},${Math.max(...lons) + buffer},${Math.max(...lats) + buffer}`;
       }
     } catch (error) {
       console.error('Failed to load stops coordinates:', error);
     }
+  }
+
+  onMount(async () => {
+    // Load stops coordinates and keep in sync with source changes
+    currentSource.subscribe(async (source) => {
+      if (source !== null) {
+        await loadStopsForSource(source);
+      }
+    });
 
     speechSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
     if (speechSupported) {

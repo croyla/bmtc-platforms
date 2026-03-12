@@ -1,0 +1,11 @@
+{
+  "majestic": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/stops-coordinates-majestic.json",
+  "banashankari": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/stops-coordinates-banashankari.json",
+  "shivajinagar": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/stops-coordinates-shivajinagar.json",
+  "kr_market": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/stops-coordinates-kalasipalya.json",
+  "vijayanagar": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/stops-coordinates-vijayanagar.json",
+  "domlur": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/stops-coordinates-domlur.json",
+  "jayanagar": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/stops-coordinates-jayanagar.json",
+  "yelahanka": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/stops-coordinates-yelahanka.json",
+  "kengeri": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/stops-coordinates-kengeri.json"
+}
