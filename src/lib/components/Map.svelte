@@ -9,7 +9,7 @@
     import {get} from 'svelte/store';
     import {Platform} from '$lib/types/Platform';
     import {previousSelectedItem, selectedItem} from '$lib/stores/selectedItem';
-    import {currentSource, sources} from '$lib/stores/source';
+    import {currentSource, sources, sourceLoading} from '$lib/stores/source';
 
     const DEFAULT_CENTER: maplibregl.LngLatLike = [77.5736529, 12.917500];
     let showResetBounds = false;
@@ -59,6 +59,8 @@
 
     async function loadPlatformsFromSource(sourceKey: string, sourceUrl: string) {
         if (!map) return;
+
+        sourceLoading.set(true);
 
         // Clear selected item when switching sources (not on first load)
         if (hasRestoredFromUrl) {
@@ -248,6 +250,8 @@
             }
         } catch (e) {
             console.error('Failed to load source:', sourceKey, e);
+        } finally {
+            sourceLoading.set(false);
         }
     }
 
@@ -317,18 +321,18 @@
             if (url) loadPlatformsFromSource(sourceKey, url);
         });
 
-        map.on('rotate', () => { map.setBearing(0); });
-        map.on('pitch', () => { map.setPitch(0); });
+        map.on('rotate', () => { map!.setBearing(0); });
+        map.on('pitch', () => { map!.setPitch(0); });
 
         map.on('load', () => {
             isMapLoaded = true;
 
             // Add live-buses source and layers (once)
-            map.addSource('live-buses', {
+            map!.addSource('live-buses', {
                 type: 'geojson',
                 data: { type: 'FeatureCollection', features: [] }
             });
-            map.addLayer({
+            map!.addLayer({
                 id: 'live-bus-circles',
                 type: 'circle',
                 source: 'live-buses',
@@ -339,7 +343,7 @@
                     'circle-stroke-color': '#fff'
                 }
             });
-            map.addLayer({
+            map!.addLayer({
                 id: 'live-bus-labels',
                 type: 'symbol',
                 source: 'live-buses',
@@ -360,8 +364,8 @@
             });
 
             // Click listener for platform features
-            map.on('click', (e) => {
-                const features = map.queryRenderedFeatures(e.point, { layers: ['platform-circles-gray', 'platform-circles-colored'] });
+            map!.on('click', (e) => {
+                const features = map!.queryRenderedFeatures(e.point, { layers: ['platform-circles-gray', 'platform-circles-colored'] });
                 if (features && features.length > 0) {
                     const feature = features[0];
                     if (feature && feature.properties && feature.properties.Platform) {
@@ -382,10 +386,10 @@
                 trackUserLocation: true,
                 showUserLocation: true,
                 showAccuracyCircle: true,
-                fitBoundsOptions: { maxZoom: map.getZoom() }
+                fitBoundsOptions: { maxZoom: map!.getZoom() }
             });
-            map.addControl(geolocate);
-            map.once('render', () => {
+            map!.addControl(geolocate);
+            map!.once('render', () => {
                 const controls = document.getElementsByClassName('maplibregl-ctrl-geolocate');
                 for (const ctrl of controls) {
                     (ctrl as HTMLElement).style.display = 'none';
@@ -406,20 +410,22 @@
             }
         });
 
-        // Load sources.json and set initial source from URL
+        // Load sources.json and set initial source from URL (default: majestic)
         fetch('/data/sources.json')
             .then(r => r.json())
             .then((data: Record<string, string>) => {
                 sources.set(data);
                 const urlParams = new URLSearchParams(window.location.search);
                 const srcParam = urlParams.get('src');
-                if (srcParam && data[srcParam]) {
-                    currentSource.set(srcParam);
-                }
+                const resolvedSource = (srcParam && data[srcParam]) ? srcParam : 'majestic';
+                currentSource.set(resolvedSource);
                 // If map already loaded and source was set, the subscription handles it.
                 // If map not loaded yet, map.on('load') will pick it up.
             })
-            .catch(e => console.error('Failed to load sources.json', e));
+            .catch(e => {
+                console.error('Failed to load sources.json', e);
+                sourceLoading.set(false);
+            });
 
         return () => {
             if (map) map.remove();

@@ -6,6 +6,7 @@ import { onMount, tick } from 'svelte';
 import SidebarSheet from '$lib/components/Sidebar.svelte';
 import {previousSelectedItem, selectedItem} from "$lib/stores/selectedItem";
 import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
+import { sourceLoading } from '$lib/stores/source';
 
 let search = '';
 let searchFocused = false;
@@ -127,8 +128,42 @@ function closeSheet() {
 <SidebarSheet />
 <Map />
 
+{#if $sourceLoading}
+  <div class="loading-overlay" aria-hidden="true">
+    <div class="loading-spinner"></div>
+  </div>
+{/if}
+
 <style>
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+  touch-action: none;
+}
+
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #008F45;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /*.cupertino-bar-row {*/
 /*  display: flex;*/
 /*  flex-direction: row;*/
