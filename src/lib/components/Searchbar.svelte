@@ -44,9 +44,13 @@
     if (!platformNumber) return '';
     const pf = platformNumber.trim();
     // If it's a number, show "Platform <num>"
-    if (/^\d+$/.test(pf)) return `Platform ${pf}`;
-    // Otherwise it's a named platform like "WEST", "SOUTH" — show "Banashankari <Name>"
-    return `Banashankari ${pf.charAt(0).toUpperCase()}${pf.slice(1).toLowerCase()}`;
+    if (/^\d+$/.test(pf)) return $messages.platform().replace('%1', pf);
+    const station = $currentSource
+            ? ((($messages as any)[$currentSource]?.() as string | undefined) ?? $currentSource) : ''
+    // Otherwise it's a named platform like "WEST", "SOUTH" — show proper translation if available
+    return Object.hasOwn($messages, pf.toLowerCase().replace(' ', '_'))
+            ? ($messages as unknown as Record<string, () => string>)[pf.toLowerCase().replace(' ', '_')]().replace('%1', station)
+            : pf;
   }
   let dropdownRef;
 

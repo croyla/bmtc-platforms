@@ -27,5 +27,9 @@
 	"east": "%1 East",
 	"west": "%1 West",
 	"main": "%1 Main",
-	"south": "%1 South"
+	"south": "%1 South",
+	"sjp_road": "SJP Road Stop",
+	"park": "Jamia Masjid Gate",
+	"fort": "Fort Side",
+	"junction": "Junction Stop"
 }

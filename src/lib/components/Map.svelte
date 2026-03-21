@@ -10,8 +10,9 @@
     import {Platform} from '$lib/types/Platform';
     import {previousSelectedItem, selectedItem} from '$lib/stores/selectedItem';
     import {currentSource, sources, sourceLoading} from '$lib/stores/source';
+    import {showConnectivity} from '$lib/stores/connectivity';
 
-    const DEFAULT_CENTER: maplibregl.LngLatLike = [77.5736529, 12.917500];
+    const DEFAULT_CENTER: maplibregl.LngLatLike = [77.5, 13.0];
     let showResetBounds = false;
     let platformBounds: maplibregl.LngLatBounds | null = null;
 
@@ -20,6 +21,26 @@
     let isMapLoaded = false;
     let hasRestoredFromUrl = false;
     let liveBusesSetup = false;
+
+    // Connectivity lines state
+    let stopCoordSources: Record<string, string> = {};
+    let stopCoordinates: Record<string, [number, number]> = {};
+    let connFeatures: GeoJSON.Feature[] = [];
+    let connAbortController: AbortController | null = null;
+    let showConn = false;
+
+    function isPlatformOpen(openHour: number | null | undefined, closeHour: number | null | undefined): boolean {
+        if (openHour == null || closeHour == null || (openHour == 0 && closeHour == 0)) return true;
+        const now = new Date();
+        const current = now.getHours() + now.getMinutes() / 60;
+        if (openHour <= closeHour) {
+            // Normal: e.g. 6.5–23
+            return current >= openHour && current < closeHour;
+        } else {
+            // Overnight: e.g. 23–4
+            return current >= openHour || current < closeHour;
+        }
+    }
 
     function getFitBoundsPadding(): number {
         const el = document.getElementById('map');
@@ -42,6 +63,8 @@
             const platformRoutes = (feature.properties && Array.isArray(feature.properties.Routes)) ? feature.properties.Routes : [];
             const platformNumber = feature.properties.Platform?.toString().toUpperCase() || '';
 
+            feature.properties.isOpen = isPlatformOpen(feature.properties.OpenHour, feature.properties.CloseHour);
+
             let isGray;
             if (activePlatformFilter) {
                 isGray = platformNumber !== activePlatformFilter;
@@ -54,6 +77,154 @@
         }
         if (map.getSource('platforms')) {
             (map.getSource('platforms')! as maplibregl.GeoJSONSource).setData(updated);
+        }
+    }
+
+    function updateConnSource() {
+        if (!map || !map.getSource('connectivity-lines')) return;
+        (map.getSource('connectivity-lines') as maplibregl.GeoJSONSource).setData({
+            type: 'FeatureCollection',
+            features: connFeatures
+        });
+    }
+
+    async function fetchOsrmRoute(key: string, from: [number, number], to: [number, number], signal: AbortSignal) {
+        try {
+            const url = `https://router.project-osrm.org/route/v1/driving/${from[0]},${from[1]};${to[0]},${to[1]}?overview=full&geometries=geojson`;
+            const res = await fetch(url, { signal });
+            if (signal.aborted || !res.ok) return;
+            const data = await res.json();
+            if (signal.aborted || !data.routes?.[0]?.geometry?.coordinates) return;
+
+            const idx = connFeatures.findIndex(f => f.properties?.key === key);
+            if (idx === -1 || signal.aborted) return;
+
+            connFeatures = connFeatures.map((f, i) =>
+                i === idx ? { ...f, geometry: { type: 'LineString' as const, coordinates: data.routes[0].geometry.coordinates } } : f
+            );
+            updateConnSource();
+        } catch (e: any) {
+            if (e?.name !== 'AbortError') console.warn('OSRM route fetch failed:', key, e);
+        }
+    }
+
+    function updateConnectivityLines() {
+        if (!map || !isMapLoaded) return;
+
+        if (connAbortController) {
+            connAbortController.abort();
+            connAbortController = null;
+        }
+
+        if (!showConn) {
+            connFeatures = [];
+            updateConnSource();
+            return;
+        }
+
+        const currentSelected = get(selectedItem);
+        const currentResults = get(results);
+
+        if (!currentSelected || !platformsGeoJson || currentResults.length === 0) {
+            connFeatures = [];
+            updateConnSource();
+            return;
+        }
+
+        const platformNumber = currentSelected.platformNumber;
+        if (!platformNumber) {
+            connFeatures = [];
+            updateConnSource();
+            return;
+        }
+
+        const platformFeature = platformsGeoJson.features.find(
+            f => f.properties?.Platform?.toString().toUpperCase() === platformNumber.toUpperCase()
+        );
+        if (!platformFeature) {
+            connFeatures = [];
+            updateConnSource();
+            return;
+        }
+
+        const platformCoords = (platformFeature.geometry as GeoJSON.Point).coordinates as [number, number];
+        const platformColor: string = platformFeature.properties?.Color || platformFeature.properties?.OriginalColor || '#1565C0';
+
+        // Build segment map: key -> { from, to, count, routes }
+        const segmentMap = new Map<string, { from: [number, number]; to: [number, number]; count: number; routes: Set<string> }>();
+
+        for (const route of currentResults) {
+            let baseIdx: number | null = null;
+            if (currentSelected.type !== 'Platform') {
+                baseIdx = route.stops.findIndex((s: any) => s.name === currentSelected.display);
+                if (baseIdx === -1) continue;
+            }
+
+            for (let level = 0; level < 3; level++) {
+                // Platform view: platform → stops[1], stops[1] → stops[2], stops[2] → stops[3]
+                // Stop view: selectedStop → stops[n+1], stops[n+1] → stops[n+2], ...
+                const fromIdx = currentSelected.type === 'Platform'
+                    ? (level === 0 ? -1 : level)
+                    : (baseIdx! + level);
+                const toIdx = currentSelected.type === 'Platform'
+                    ? (level + 1)
+                    : (baseIdx! + level + 1);
+                if (toIdx >= route.stops.length) break;
+
+                let fromCoords: [number, number];
+                if (fromIdx < 0) {
+                    fromCoords = platformCoords;
+                } else {
+                    const fc = stopCoordinates[route.stops[fromIdx].name];
+                    if (!fc) break;
+                    fromCoords = fc;
+                }
+
+                const tc = stopCoordinates[route.stops[toIdx].name];
+                if (!tc) break;
+
+                const key = `${fromCoords[0].toFixed(6)},${fromCoords[1].toFixed(6)}->${tc[0].toFixed(6)},${tc[1].toFixed(6)}`;
+                if (!segmentMap.has(key)) {
+                    segmentMap.set(key, { from: fromCoords, to: tc, count: 0, routes: new Set() });
+                }
+                const seg = segmentMap.get(key)!;
+                seg.count++;
+                seg.routes.add(route.number);
+            }
+        }
+
+        if (segmentMap.size === 0) {
+            connFeatures = [];
+            updateConnSource();
+            return;
+        }
+
+        const maxCount = Math.max(...[...segmentMap.values()].map(s => s.count));
+
+        connFeatures = [...segmentMap.entries()].map(([key, seg]) => {
+            const routeArr = [...seg.routes].map(r => {
+                const s = String(r).replace(/-/g, '');
+                const parts = s.split(' ').filter(Boolean);
+                if (parts.length === 0) return s;
+                const first = parts[0];
+                return /\d/.test(first) ? first : (parts.length > 1 ? `${first} ${parts[1]}` : first);
+            });
+            const routeLabel = routeArr.length <= 3
+                ? routeArr.join(', ')
+                : routeArr.slice(0, 3).join(', ') + '...';
+            return {
+                type: 'Feature' as const,
+                geometry: { type: 'LineString' as const, coordinates: [seg.from, seg.to] },
+                properties: { key, opacity: 0.2 + (seg.count / maxCount) * 0.75, count: seg.count, routeLabel, color: platformColor }
+            };
+        });
+        updateConnSource();
+
+        // Fetch OSRM road paths asynchronously
+        connAbortController = new AbortController();
+        const { signal } = connAbortController;
+        for (const [key, seg] of segmentMap) {
+            fetchOsrmRoute(key, seg.from, seg.to, signal);
         }
     }
 
@@ -104,12 +275,13 @@
                 bounds.extend((feature.geometry as GeoJSON.Point).coordinates);
                 const platformRoutes = (feature.properties && Array.isArray(feature.properties.Routes)) ? feature.properties.Routes : [];
                 feature.properties!.isGray = !platformRoutes.some((route) => Object.hasOwn(route, 'Route') && resultRouteIds.has(route.Route));
+                feature.properties!.isOpen = isPlatformOpen(feature.properties?.OpenHour, feature.properties?.CloseHour);
             }
 
             map.fitBounds(bounds, { padding: getFitBoundsPadding() });
             platformsGeoJson = data;
 
-            const platformsArr = (data.features || []).map(feature => {
+            const platformsArr = (data.features || []).filter(feature => feature.properties?.isOpen).map(feature => {
                 const platformNumber = feature.properties?.Platform?.toString().toUpperCase() || '';
                 const color = feature.properties?.Color || '#008F45';
                 const icon = feature.properties?.Icon || null;
@@ -147,7 +319,7 @@
                 id: 'platform-circles-gray',
                 type: 'circle',
                 source: 'platforms',
-                filter: ['==', ['get', 'isGray'], true],
+                filter: ['all', ['==', ['get', 'isOpen'], true], ['==', ['get', 'isGray'], true]],
                 paint: {
                     'circle-radius': [
                         'interpolate', ['linear'], ['zoom'],
@@ -160,7 +332,7 @@
                 id: 'platform-labels-gray',
                 type: 'symbol',
                 source: 'platforms',
-                filter: ['==', ['get', 'isGray'], true],
+                filter: ['all', ['==', ['get', 'isOpen'], true], ['==', ['get', 'isGray'], true]],
                 layout: {
                     'text-field': ['to-string', ['coalesce', ['get', 'Icon'], ['get', 'Platform']]],
                     'text-size': 16,
@@ -179,7 +351,7 @@
                 id: 'platform-circles-colored',
                 type: 'circle',
                 source: 'platforms',
-                filter: ['==', ['get', 'isGray'], false],
+                filter: ['all', ['==', ['get', 'isOpen'], true], ['==', ['get', 'isGray'], false]],
                 paint: {
                     'circle-radius': [
                         'interpolate', ['linear'], ['zoom'],
@@ -192,7 +364,7 @@
                 id: 'platform-labels-colored',
                 type: 'symbol',
                 source: 'platforms',
-                filter: ['==', ['get', 'isGray'], false],
+                filter: ['all', ['==', ['get', 'isOpen'], true], ['==', ['get', 'isGray'], false]],
                 layout: {
                     'text-field': ['to-string', ['coalesce', ['get', 'Icon'], ['get', 'Platform']]],
                     'text-size': 16,
@@ -253,6 +425,27 @@
         } finally {
             sourceLoading.set(false);
         }
+
+        // Load stop coordinates for this source (non-blocking)
+        stopCoordinates = {};
+        const coordUrl = stopCoordSources[sourceKey];
+        if (coordUrl) loadStopCoordinates(coordUrl);
+    }
+
+    function loadStopCoordinates(url: string) {
+        fetch(url)
+            .then(r => r.json())
+            .then((data: Record<string, { name: string; lat: number; lon: number }>) => {
+                const nameToCoords: Record<string, [number, number]> = {};
+                for (const stop of Object.values(data)) {
+                    if (stop.name && stop.lon != null && stop.lat != null) {
+                        nameToCoords[stop.name] = [stop.lon, stop.lat];
+                    }
+                }
+                stopCoordinates = nameToCoords;
+                if (showConn) updateConnectivityLines();
+            })
+            .catch(() => {});
     }
 
     onMount(() => {
@@ -282,10 +475,17 @@
 
         const unsubResults = results.subscribe(() => {
             if (map && platformsGeoJson) updatePlatformColors();
+            if (showConn) updateConnectivityLines();
         });
 
         const unsubSelected = selectedItem.subscribe(() => {
             if (map && platformsGeoJson) updatePlatformColors();
+            if (showConn) updateConnectivityLines();
+        });
+
+        const unsubConn = showConnectivity.subscribe(val => {
+            showConn = val;
+            if (isMapLoaded) updateConnectivityLines();
         });
 
         const unsubLive = displayedLiveArrivals.subscribe(arrivals => {
@@ -326,6 +526,43 @@
 
         map.on('load', () => {
             isMapLoaded = true;
+
+            // Add connectivity-lines source and layer (below platforms)
+            map!.addSource('connectivity-lines', {
+                type: 'geojson',
+                data: { type: 'FeatureCollection', features: [] }
+            });
+            map!.addLayer({
+                id: 'connectivity-lines-layer',
+                type: 'line',
+                source: 'connectivity-lines',
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: {
+                    'line-color': ['coalesce', ['get', 'color'], '#1565C0'],
+                    'line-width': 3,
+                    'line-opacity': ['coalesce', ['get', 'opacity'], 0.5]
+                }
+            });
+            map!.addLayer({
+                id: 'connectivity-labels-layer',
+                type: 'symbol',
+                source: 'connectivity-lines',
+                layout: {
+                    'symbol-placement': 'line',
+                    'text-field': ['get', 'routeLabel'],
+                    'text-size': 11,
+                    'text-font': ['Manrope SemiBold'],
+                    'text-anchor': 'center',
+                    'text-allow-overlap': false,
+                    'symbol-spacing': 250
+                },
+                paint: {
+                    'text-color': ['coalesce', ['get', 'color'], '#1565C0'],
+                    'text-halo-color': '#fff',
+                    'text-halo-width': 1.5,
+                    'text-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0, 17, 1]
+                }
+            });
 
             // Add live-buses source and layers (once)
             map!.addSource('live-buses', {
@@ -410,6 +647,18 @@
             }
         });
 
+        // Load stop coordinate source index, then load coords for current source
+        fetch('/data/stops-coordinates-sources.json')
+            .then(r => r.json())
+            .then((data: Record<string, string>) => {
+                stopCoordSources = data;
+                const sourceKey = get(currentSource);
+                if (sourceKey && data[sourceKey]) {
+                    loadStopCoordinates(data[sourceKey]);
+                }
+            })
+            .catch(() => {});
+
         // Load sources.json and set initial source from URL (default: majestic)
         fetch('/data/sources.json')
             .then(r => r.json())
@@ -429,11 +678,13 @@
 
         return () => {
             if (map) map.remove();
+            if (connAbortController) connAbortController.abort();
             unsubResults();
             unsubSelected();
             unsubLive();
             unsubFocused();
             unsubSource();
+            unsubConn();
         };
     });
 </script>

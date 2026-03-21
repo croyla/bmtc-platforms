@@ -24,7 +24,9 @@
     const station = $currentSource
             ? ((($messages as any)[$currentSource]?.() as string | undefined) ?? $currentSource) : ''
     // Otherwise it's a named platform like "WEST", "SOUTH" — show proper translation if available
-    return Object.hasOwn($messages, pf.toLowerCase()) ? ($messages as unknown as Record<string, () => string>)[pf.toLowerCase()]().replace('%1', station) : pf;
+    return Object.hasOwn($messages, pf.toLowerCase().replace(' ', '_'))
+            ? ($messages as unknown as Record<string, () => string>)[pf.toLowerCase().replace(' ', '_')]().replace('%1', station)
+            : pf;
   }
 </script>
 

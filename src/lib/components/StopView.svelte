@@ -12,6 +12,7 @@
   import {tick, onDestroy} from "svelte";
   import { liveArrivals, liveArrivalsLoading, liveArrivalsError, displayedLiveArrivals, updateLiveArrivalsForPlatform, clearLiveArrivalsForPlatform } from '$lib/stores/liveArrivals';
   import { currentSource } from '$lib/stores/source';
+  import { showConnectivity } from '$lib/stores/connectivity';
 
   // Helper to get platform color
   function getPlatformColor(platformNumber) {
@@ -24,13 +25,13 @@
     if (!platformNumber) return '';
     const pf = platformNumber.trim();
     if (/^\d+$/.test(pf)) return $messages.platform().replace('%1', pf);
-    // For named platforms like "WEST", "SOUTH", substitute the current station name
+    // For named platforms like "WEST", "SOUTH", "SJP ROAD", substitute the current station name
     const station = $currentSource
       ? ((($messages as any)[$currentSource]?.() as string | undefined) ?? $currentSource)
       : '';
-    return Object.hasOwn($messages, pf.toLowerCase())
-      ? ($messages as unknown as Record<string, () => string>)[pf.toLowerCase()]().replace('%1', station)
-      : pf;
+    return Object.hasOwn($messages, pf.toLowerCase().replace(' ', '_'))
+            ? ($messages as unknown as Record<string, () => string>)[pf.toLowerCase().replace(' ', '_')]().replace('%1', station)
+            : pf;
   }
 
   // Live arrivals management
@@ -257,7 +258,27 @@
 
 {#if $selectedItem && ($selectedItem.type === 'Stop' || $selectedItem.type === 'Platform' || $selectedItem.type === 'Area')}
   <div class="stopview-content">
-    <div class="stopview-header">{$selectedItem.type === 'Platform' ? formatPlatformLabel($selectedItem?.display) : $messages.buses_to().replace('%1', $language === 'en' ? $selectedItem?.display : $selectedItem?.displayKannada ?? $selectedItem?.display)}</div>
+    <div class="stopview-header-row">
+      <div class="stopview-header">{$selectedItem.type === 'Platform' ? formatPlatformLabel($selectedItem?.display) : $messages.buses_to().replace('%1', $language === 'en' ? $selectedItem?.display : $selectedItem?.displayKannada ?? $selectedItem?.display)}</div>
+    </div>
+    {#if platformId}
+      <button
+              class="connectivity-btn"
+              class:active={$showConnectivity}
+              on:click={() => showConnectivity.update(v => !v)}
+              aria-label="Toggle route connectivity lines"
+      >
+        Connectivity
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="6" cy="6" r="2.5"/>
+          <circle cx="18" cy="6" r="2.5"/>
+          <circle cx="12" cy="18" r="2.5"/>
+          <line x1="8" y1="7" x2="16" y2="7"/>
+          <line x1="7" y1="8" x2="11" y2="16"/>
+          <line x1="17" y1="8" x2="13" y2="16"/>
+        </svg>
+      </button>
+    {/if}
     {#if $selectedItem.type !== 'Platform' && platformId}
       <div class="stopview-subheader">{$messages.from().replace('%1', formatPlatformLabel(platformId))}</div>
     {/if}
@@ -311,11 +332,44 @@
 .stopview-content {
   padding: 32px 20px 20px 20px;
 }
+.stopview-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
 .stopview-header {
   font-size: 20px;
   font-weight: 600;
-  margin-bottom: 8px;
-  margin-top: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.connectivity-btn {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  color: #007aff;
+  background-color: #007aff22;
+  border: 0;
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
+  width: 100%;
+}
+.connectivity-btn:active {
+  opacity: 0.75;
+}
+.connectivity-btn.active {
+  background-color: #007aff;
+  color: #fff;
 }
 .stopview-subheader {
   font-size: 15px;
