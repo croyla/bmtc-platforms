@@ -2,7 +2,7 @@
 
 View platforms, search through routes to find out about their departure platform, or search through stops to find platforms and buses
 
-The version that this repo has is hosted on [our domain](https://platforms.blrtransit.com) as well as [github-pages](https://croyla.github.io/bmtc-platforms)
+The version that this repo has is hosted on [github-pages](https://croyla.github.io/bmtc-platforms)
 
 ### Usage
 
