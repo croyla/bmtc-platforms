@@ -513,9 +513,11 @@
             showResetBounds = true;
         });
 
-        // Subscribe to source changes — only fires loadPlatformsFromSource when map is already loaded
+        // Subscribe to source changes — save to localStorage, load platforms when map is ready
         const unsubSource = currentSource.subscribe(sourceKey => {
-            if (!isMapLoaded || !sourceKey) return;
+            if (!sourceKey) return;
+            try { localStorage.setItem('bmtc-last-source', sourceKey); } catch {}
+            if (!isMapLoaded) return;
             const $sources = get(sources);
             const url = $sources[sourceKey];
             if (url) loadPlatformsFromSource(sourceKey, url);
@@ -659,22 +661,65 @@
             })
             .catch(() => {});
 
-        // Load sources.json and set initial source from URL (default: majestic)
-        fetch('/data/sources.json')
-            .then(r => r.json())
-            .then((data: Record<string, string>) => {
-                sources.set(data);
+        // Resolve which source to load, then set currentSource (loading screen stays up until then)
+        async function initSource() {
+            try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const srcParam = urlParams.get('src');
-                const resolvedSource = (srcParam && data[srcParam]) ? srcParam : 'majestic';
-                currentSource.set(resolvedSource);
-                // If map already loaded and source was set, the subscription handles it.
-                // If map not loaded yet, map.on('load') will pick it up.
-            })
-            .catch(e => {
-                console.error('Failed to load sources.json', e);
+
+                const [sourcesData, bboxData] = await Promise.all([
+                    fetch('/data/sources.json').then(r => r.json()) as Promise<Record<string, string>>,
+                    fetch('/data/source-bboxes.json').then(r => r.json()).catch(() => null) as Promise<Record<string, [number,number,number,number]> | null>
+                ]);
+
+                sources.set(sourcesData);
+
+                // 1. URL param has highest priority
+                if (srcParam && sourcesData[srcParam]) {
+                    currentSource.set(srcParam);
+                    return;
+                }
+
+                // 2. Try geolocation — stays pending until resolved or timed out
+                const pos = await new Promise<GeolocationPosition | null>(resolve => {
+                    if (!navigator.geolocation) { resolve(null); return; }
+                    const timer = setTimeout(() => resolve(null), 4000);
+                    navigator.geolocation.getCurrentPosition(
+                        p => { clearTimeout(timer); resolve(p); },
+                        () => { clearTimeout(timer); resolve(null); },
+                        { timeout: 4000, maximumAge: 300000 }
+                    );
+                });
+
+                if (pos && bboxData) {
+                    const { longitude: lng, latitude: lat } = pos.coords;
+                    const PAD = 0.005; // ~500m padding around each bbox
+                    for (const [key, [minLng, minLat, maxLng, maxLat]] of Object.entries(bboxData)) {
+                        if (lng >= minLng - PAD && lng <= maxLng + PAD &&
+                            lat >= minLat - PAD && lat <= maxLat + PAD) {
+                            currentSource.set(key);
+                            return;
+                        }
+                    }
+                }
+
+                // 3. Last selected source from localStorage
+                let lastSource: string | null = null;
+                try { lastSource = localStorage.getItem('bmtc-last-source'); } catch {}
+                if (lastSource && sourcesData[lastSource]) {
+                    currentSource.set(lastSource);
+                    return;
+                }
+
+                // 4. Fallback
+                currentSource.set('majestic');
+
+            } catch (e) {
+                console.error('Failed to initialize source:', e);
                 sourceLoading.set(false);
-            });
+            }
+        }
+        initSource();
 
         return () => {
             if (map) map.remove();
