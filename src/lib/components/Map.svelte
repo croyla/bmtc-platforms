@@ -465,6 +465,7 @@
     }
 
     onMount(() => {
+      console.log('Initializing...')
         map = new maplibregl.Map({
             container: 'map',
             style: {
@@ -679,6 +680,7 @@
 
         // Resolve which source to load, then set currentSource (loading screen stays up until then)
         async function initSource() {
+          console.log("Initializing source...")
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const srcParam = urlParams.get('src');
@@ -728,11 +730,11 @@
                 }
 
                 // 4. Fallback
-                currentSource.set('majestic');
-
+              currentSource.set('kempegowda');
+              sourceLoading.set(false);
             } catch (e) {
                 console.error('Failed to initialize source:', e);
-                sourceLoading.set(false);
+                return;
             }
         }
         initSource();
