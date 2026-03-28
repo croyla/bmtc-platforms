@@ -88,7 +88,7 @@
         `viewbox=${viewbox}&bounded=1`,
         {
           headers: {
-            'User-Agent': 'Banashankari Bus Station App'
+            'User-Agent': 'BMTC Bus Stations App'
           }
         }
       );
@@ -242,7 +242,8 @@
       for (const route of allRoutes) {
         if (route.stops && Array.isArray(route.stops)) {
           for (const stop of route.stops) {
-            if (stop.name !== 'Banashankari Bus Station' && stop.name !== 'Banashankari') {
+            // Skip current Bus Station
+            if (stop.name.toLowerCase !== `${currentSource} bus station` || stop.name.toLowerCase() !== currentSource){
               stopsMap.set(stop.name, { name: stop.name, nameKannada: stop.nameKannada });
             }
           }
@@ -416,7 +417,8 @@
       // Stops
       if (route.stops && Array.isArray(route.stops)) {
         for (const s of route.stops) {
-          if(s.name && s.name == "Banashankari Bus Station" || s.name == "Banashankari") {
+          // Skip current Bus Station
+          if (s.name.toLowerCase === `${currentSource} bus station` || s.name.toLowerCase() === currentSource) {
             continue;
           }
           if (

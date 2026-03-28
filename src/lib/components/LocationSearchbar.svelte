@@ -70,7 +70,7 @@
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&viewbox=77.5,12.85,77.65,13.0&bounded=1`,
         {
           headers: {
-            'User-Agent': 'Banashankari Transit App'
+            'User-Agent': 'BMTC-Platforms Transit App'
           }
         }
       );
@@ -104,8 +104,8 @@
     for (const route of allRoutes) {
       if (route.stops && Array.isArray(route.stops)) {
         for (const stop of route.stops) {
-          // Skip Banashankari Bus Station
-          if (stop.name === "Banashankari Bus Station" || stop.name === "Banashankari") {
+          // Skip current Bus Station
+          if (stop.name.toLowerCase === `${currentSource} bus station` || stop.name.toLowerCase() === currentSource) {
             continue;
           }
 

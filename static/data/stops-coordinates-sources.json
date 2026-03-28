@@ -1,5 +1,5 @@
 {
-  "majestic": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/stops-coordinates-majestic.json",
+  "kempegowda": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/stops-coordinates-majestic.json",
   "banashankari": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/stops-coordinates-banashankari.json",
   "shivajinagar": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/stops-coordinates-shivajinagar.json",
   "kr_market": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/stops-coordinates-kalasipalya.json",

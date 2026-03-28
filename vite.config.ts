@@ -36,9 +36,9 @@ export default defineConfig({
 				'pwa-512x512.png'
 			],
 			manifest: {
-				name: 'Banashankari',
-				short_name: 'Banashankari',
-				description: 'Banashankari Bus Station Platform App',
+				name: 'BMTC-Platforms',
+				short_name: 'Platforms',
+				description: 'BMTC Bus Stations Platform App',
 				theme_color: '#ffffff',
 				background_color: '#ffffff',
 				display: 'standalone',

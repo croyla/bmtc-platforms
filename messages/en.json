@@ -12,7 +12,7 @@
 	"lan": "ಕನ್ನಡ",
 	"select_station": "Select a Bus Station",
 	"banashankari": "Banashankari",
-	"majestic": "Majestic",
+	"kempegowda": "Majestic",
 	"shivajinagar": "Shivajinagar",
 	"kr_market": "KR Market (Kalasipalya)",
 	"shantinagar": "Shantinagar",
@@ -31,5 +31,6 @@
 	"sjp_road": "SJP Road Stop",
 	"park": "Jamia Masjid Gate",
 	"fort": "Fort Side",
-	"junction": "Junction Stop"
+	"junction": "Junction Stop",
+	"opp": "Opposite %1 Bus Station"
 }

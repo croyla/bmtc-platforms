@@ -1,5 +1,5 @@
 {
-  "majestic": "https://raw.githubusercontent.com/bengawalk/majestic/refs/heads/main/static/data/platforms-routes-majestic.geojson",
+  "kempegowda": "https://raw.githubusercontent.com/bengawalk/majestic/refs/heads/main/static/data/platforms-routes-majestic.geojson",
   "banashankari": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/platforms-routes-banashankari.geojson",
   "shivajinagar": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/platforms-routes-shivajinagar.geojson",
   "kr_market": "https://raw.githubusercontent.com/croyla/bmtc-platforms-geojson/refs/heads/new_schema/out/platforms-routes-kalasipalya.geojson",

@@ -261,6 +261,9 @@
     <div class="stopview-header-row">
       <div class="stopview-header">{$selectedItem.type === 'Platform' ? formatPlatformLabel($selectedItem?.display) : $messages.buses_to().replace('%1', $language === 'en' ? $selectedItem?.display : $selectedItem?.displayKannada ?? $selectedItem?.display)}</div>
     </div>
+    {#if $selectedItem.type !== 'Platform' && platformId}
+      <div class="stopview-subheader">{$messages.from().replace('%1', formatPlatformLabel(platformId))}</div>
+    {/if}
     {#if platformId}
       <button
               class="connectivity-btn"
@@ -278,9 +281,6 @@
           <line x1="17" y1="8" x2="13" y2="16"/>
         </svg>
       </button>
-    {/if}
-    {#if $selectedItem.type !== 'Platform' && platformId}
-      <div class="stopview-subheader">{$messages.from().replace('%1', formatPlatformLabel(platformId))}</div>
     {/if}
     <div class="stopview-list">
       {#if isLoadingLiveData && !hasLoadedOnce && platformId}

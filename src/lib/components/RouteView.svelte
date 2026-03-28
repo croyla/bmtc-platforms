@@ -216,7 +216,7 @@
   const platformIcon = pf?.icon || null;
 
   function isKempegowda(stop) {
-    return stop.name === 'Banashankari Bus Station' || stop.name === 'Banashankari';
+    return stop.name.toLowerCase === `${currentSource} bus station` || stop.name.toLowerCase() === currentSource;
   }
 
   // Format platform label
