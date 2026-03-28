@@ -261,9 +261,10 @@
         }
         displayedLiveArrivals.set([]);
 
+        let data: GeoJSON.FeatureCollection | null = null;
         try {
             const response = await fetch(sourceUrl);
-            const data: GeoJSON.FeatureCollection = await response.json();
+            data = await response.json();
 
             if (!map) return;
 
@@ -426,10 +427,25 @@
             sourceLoading.set(false);
         }
 
-        // Load stop coordinates for this source (non-blocking)
+        // Build stop coordinates from GeoJSON if stops carry lat/lon; otherwise fetch external file
         stopCoordinates = {};
-        const coordUrl = stopCoordSources[sourceKey];
-        if (coordUrl) loadStopCoordinates(coordUrl);
+        const inlineCoords: Record<string, [number, number]> = {};
+        for (const feature of (data?.features ?? [])) {
+            for (const route of (feature.properties?.Routes || [])) {
+                for (const stop of (route.Stops || [])) {
+                    if (stop.name && stop.lon != null && stop.lat != null) {
+                        inlineCoords[stop.name] = [stop.lon, stop.lat];
+                    }
+                }
+            }
+        }
+        if (Object.keys(inlineCoords).length > 0) {
+            stopCoordinates = inlineCoords;
+            if (showConn) updateConnectivityLines();
+        } else {
+            const coordUrl = stopCoordSources[sourceKey];
+            if (coordUrl) loadStopCoordinates(coordUrl);
+        }
     }
 
     function loadStopCoordinates(url: string) {
