@@ -32,5 +32,6 @@
 	"park": "Jamia Masjid Gate",
 	"fort": "Fort Side",
 	"junction": "Junction Stop",
-	"opp": "Opposite %1 Bus Station"
+	"opp": "Opposite %1 Bus Station",
+	"4th_block": "%1 4th Block Stop"
 }

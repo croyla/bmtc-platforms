@@ -28,9 +28,10 @@
 	"west": "%1 ಪಶ್ಚಿಮ ನಿಲ್ದಾಣದ",
 	"main": "%1 ಮುಖ್ಯ ನಿಲ್ದಾಣದ",
 	"south": "%1 ದಕ್ಷಿಣ ನಿಲ್ದಾಣದ",
-	"sjp_road": "SJP Road Stop",
+	"sjp_road": "SJP Road ನಿಲ್ದಾಣದ",
 	"park": "Jamia Masjid Gate",
 	"fort": "Fort Side",
-	"junction": "Junction Stop",
-	"opp": "Opposite %1 Bus Station"
+	"junction": "Junction ನಿಲ್ದಾಣದ",
+	"opp": "Opposite %1 ಬಸ್ ನಿಲ್ದಾಣದ",
+	"4th_block": "%1 4th Block ನಿಲ್ದಾಣದ"
 }
