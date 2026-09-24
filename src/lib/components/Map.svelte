@@ -466,46 +466,67 @@
 
     onMount(() => {
       console.log('Initializing...')
-        map = new maplibregl.Map({
-            container: 'map',
-            style: {
-                version: 8,
-                glyphs: 'glyphs/{fontstack}/{range}.pbf',
-                sources: {
-                    carto: {
-                        type: 'raster',
-                        tiles: ['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'],
-                        tileSize: 256,
-                        attribution: '© OpenStreetMap contributors, © CartoDB'
-                    }
-                },
-                layers: [{ id: 'carto', type: 'raster', source: 'carto' }]
-            },
-            center: DEFAULT_CENTER,
-            zoom: 16.8,
-            dragRotate: false,
-            bearing: 0,
-            pitch: 0,
-            maxPitch: 0,
-            minPitch: 0
+
+        // OpenFreeMap only hosts glyphs for its own basemap fonts, so a symbol
+        // layer asking for a font it doesn't have 404s mid-tile-parse and kills
+        // that tile's rendering entirely (not just the missing labels) — this is
+        // what broke platform-circles-gray/colored after the carto->openfreemap
+        // migration. We keep OpenFreeMap's own fonts on their CDN and route only
+        // our platform labels' 'Manrope SemiBold' to the locally-hosted glyphs.
+        maplibregl.addProtocol('blr-glyphs', async (params) => {
+            const path = params.url.replace('blr-glyphs://', '');
+            const fontstack = decodeURIComponent(path.slice(0, path.indexOf('/')));
+            const range = path.slice(path.indexOf('/') + 1);
+            const target = fontstack === 'Manrope SemiBold'
+                ? `/glyphs/${encodeURIComponent(fontstack)}/${range}`
+                : `https://tiles.openfreemap.org/fonts/${encodeURIComponent(fontstack)}/${range}`;
+            const res = await fetch(target);
+            if (!res.ok) throw new Error(`Glyph fetch failed (${res.status}): ${target}`);
+            return { data: await res.arrayBuffer() };
         });
 
-        const unsubResults = results.subscribe(() => {
+        let cancelled = false;
+        let unsubResults: () => void = () => {};
+        let unsubSelected: () => void = () => {};
+        let unsubConn: () => void = () => {};
+        let unsubLive: () => void = () => {};
+        let unsubFocused: () => void = () => {};
+        let unsubSource: () => void = () => {};
+
+        (async () => {
+            const style = await fetch('https://tiles.openfreemap.org/styles/positron').then(r => r.json());
+            style.glyphs = 'blr-glyphs://{fontstack}/{range}.pbf';
+
+            if (cancelled) return;
+
+            map = new maplibregl.Map({
+                container: 'map',
+                style,
+                center: DEFAULT_CENTER,
+                zoom: 16.8,
+                dragRotate: false,
+                bearing: 0,
+                pitch: 0,
+                maxPitch: 0,
+                minPitch: 0
+            });
+
+        unsubResults = results.subscribe(() => {
             if (map && platformsGeoJson) updatePlatformColors();
             if (showConn) updateConnectivityLines();
         });
 
-        const unsubSelected = selectedItem.subscribe(() => {
+        unsubSelected = selectedItem.subscribe(() => {
             if (map && platformsGeoJson) updatePlatformColors();
             if (showConn) updateConnectivityLines();
         });
 
-        const unsubConn = showConnectivity.subscribe(val => {
+        unsubConn = showConnectivity.subscribe(val => {
             showConn = val;
             if (isMapLoaded) updateConnectivityLines();
         });
 
-        const unsubLive = displayedLiveArrivals.subscribe(arrivals => {
+        unsubLive = displayedLiveArrivals.subscribe(arrivals => {
             if (!map) return;
             const features: GeoJSON.Feature[] = arrivals
                 .filter(a => a.location)
@@ -524,14 +545,14 @@
             }
         });
 
-        const unsubFocused = focusedLiveBus.subscribe(bus => {
+        unsubFocused = focusedLiveBus.subscribe(bus => {
             if (!map || !bus || !bus.location) return;
             map.easeTo({ center: [bus.location.lng, bus.location.lat - 0.0005], zoom: Math.max(17), duration: 600 });
             showResetBounds = true;
         });
 
         // Subscribe to source changes — save to localStorage, load platforms when map is ready
-        const unsubSource = currentSource.subscribe(sourceKey => {
+        unsubSource = currentSource.subscribe(sourceKey => {
             if (!sourceKey) return;
             try { localStorage.setItem('bmtc-last-source', sourceKey); } catch {}
             if (!isMapLoaded) return;
@@ -570,7 +591,7 @@
                     'symbol-placement': 'line',
                     'text-field': ['get', 'routeLabel'],
                     'text-size': 11,
-                    'text-font': ['Manrope SemiBold'],
+                    'text-font': ['Noto Sans Regular'],
                     'text-anchor': 'center',
                     'text-allow-overlap': false,
                     'symbol-spacing': 250
@@ -606,7 +627,7 @@
                 layout: {
                     'text-field': ['to-string', ['get', 'bus_no']],
                     'text-size': 11,
-                    'text-font': ['Manrope SemiBold'],
+                    'text-font': ['Noto Sans Regular'],
                     'text-offset': [0, 1.6],
                     'text-anchor': 'top',
                     'text-allow-overlap': false
@@ -665,6 +686,7 @@
                 loadPlatformsFromSource(sourceKey, $sources[sourceKey]);
             }
         });
+        })();
 
         // Load stop coordinate source index, then load coords for current source
         fetch('/data/stops-coordinates-sources.json')
@@ -740,6 +762,7 @@
         initSource();
 
         return () => {
+            cancelled = true;
             if (map) map.remove();
             if (connAbortController) connAbortController.abort();
             unsubResults();
@@ -748,6 +771,7 @@
             unsubFocused();
             unsubSource();
             unsubConn();
+            maplibregl.removeProtocol('blr-glyphs');
         };
     });
 </script>
